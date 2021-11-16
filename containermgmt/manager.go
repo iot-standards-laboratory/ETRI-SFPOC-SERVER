@@ -1,42 +1,19 @@
-package containermgnt
+package containermgmt
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os/exec"
 	"strings"
 )
 
-type Container struct {
-	Image string `json:"image"`
-	Name  string `json:"name"`
-}
+// type Container struct {
+// 	ID   string `json:"image"`
+// 	Name string `json:"name"`
+// 	Addr string `json:addr`
+// }
 
-type ContainerReturnKey struct{}
-
-var ReturnKey = ContainerReturnKey{}
-
-func CreateContainer(ctx context.Context, cont *Container) context.Context {
-
-	fmt.Println("container : ", *cont)
-	args := strings.Split(fmt.Sprintf("container\\run\\-d\\--name\\%s\\%s", cont.Name, cont.Image), "\\")
-	fmt.Println(args)
-	bout, err := exec.Command("docker", args...).Output()
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	ctx = context.WithValue(ctx, ReturnKey, bout)
-
-	return ctx
-}
-
-func GetContainers(ctx context.Context) context.Context {
-	// cmd := exec.Command("firefox")
-	// err := cmd.Run()
-
+func IsExist(name string) bool {
 	cmd := strings.Split("container\\ls\\--format\\'{{.Image}} {{.Names}}'\\-a", "\\")
 	bout, err := exec.Command("docker", cmd...).Output()
 	if err != nil {
@@ -45,7 +22,6 @@ func GetContainers(ctx context.Context) context.Context {
 
 	sout := strings.Split(string(bout), "\n")
 
-	var list []Container
 	for _, e := range sout {
 		l := strings.Split(e, " ")
 
@@ -53,22 +29,25 @@ func GetContainers(ctx context.Context) context.Context {
 			continue
 		}
 
-		container := Container{
-			Image: l[0],
-			Name:  l[1],
+		if name == l[0] {
+			return true
 		}
-
-		list = append(list, container)
 	}
 
-	b, err := json.Marshal(list)
+	return false
+}
+
+func CreateContainer(name string) error {
+
+	if IsExist(name) {
+		return nil
+	}
+	args := strings.Split(fmt.Sprintf("container\\run\\-d\\%s", name), "\\")
+	fmt.Println(args)
+	_, err := exec.Command("docker", args...).Output()
 	if err != nil {
-		log.Fatalln("JSON Marshal error!!")
+		return err
 	}
 
-	fmt.Println(string(b))
-
-	ctx = context.WithValue(ctx, ReturnKey, b)
-
-	return ctx
+	return nil
 }

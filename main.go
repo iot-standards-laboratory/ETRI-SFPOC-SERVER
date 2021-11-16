@@ -6,6 +6,14 @@ import (
 )
 
 func main() {
-	http.ListenAndServe(":3000", router.NewRouter())
-	// fmt.Println(string(out))
+	err := http.ListenAndServe(":3000", router.NewRouter())
+	if err != nil {
+		panic(err)
+	}
+
+	// fmt.Scanln()
+
+	// fmt.Println(uuid.New())
+	// bootstrap.RunBootstrapServer()
+
 }

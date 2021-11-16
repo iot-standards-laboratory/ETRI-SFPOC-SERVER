@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  devicemanagera:
+    build: ./devicemanagera
+    networks:
+      - container-net
+    image: devicemanagera
+    hostname: devicemanagera
+
+  devicemanagerb:
+    build: ./devicemanagerb
+    networks:
+      - container-net
+    image: devicemanagerb
+    hostname: devicemanagerb
+    volumes:
+      - ./volumes:/home/build
+
+networks:
+  container-net: null
