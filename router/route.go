@@ -77,6 +77,7 @@ func GetControllerList(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
+		return
 	}
 	fmt.Println(list)
 	encoder := json.NewEncoder(w)
@@ -85,6 +86,7 @@ func GetControllerList(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
+		return
 	}
 }
 
@@ -96,6 +98,7 @@ func PostController(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
+		return
 	}
 
 	encoder := json.NewEncoder(w)
@@ -104,6 +107,7 @@ func PostController(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
+		return
 	}
 
 	sendNotification(&Notification{Msg: "Added Controller"})
@@ -116,14 +120,19 @@ var upgrader = websocket.Upgrader{
 }
 
 var notifications []chan *Notification
+var notiMutex sync.Mutex
 
 func sendNotification(noti *Notification) {
+	// notiMutex.Lock()
+	// defer notiMutex.Unlock()
 	for _, ch := range notifications {
 		ch <- noti
 	}
 }
 
 func removeNotification(noti chan *Notification) {
+	notiMutex.Lock()
+	defer notiMutex.Unlock()
 	for i, e := range notifications {
 		if e == noti {
 			discoveredDevices[i] = discoveredDevices[len(discoveredDevices)-1]
@@ -133,11 +142,14 @@ func removeNotification(noti chan *Notification) {
 }
 func GetNotification(w http.ResponseWriter, r *http.Request) {
 	notiChan := make(chan *Notification, 1)
+	notiMutex.Lock()
 	notifications = append(notifications, notiChan)
+	notiMutex.Unlock()
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
+		return
 	}
 
 	for {
@@ -146,7 +158,6 @@ func GetNotification(w http.ResponseWriter, r *http.Request) {
 		if conn.WriteJSON(notification) != nil {
 			log.Println(err)
 			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
 			removeNotification(notiChan)
 			notiChan = nil
 			return
@@ -156,11 +167,14 @@ func GetNotification(w http.ResponseWriter, r *http.Request) {
 
 func GetDiscoveredDevices(w http.ResponseWriter, r *http.Request) {
 	noti := make(chan string, 1)
+	mutex.Lock()
 	discoveredNotifications = append(discoveredNotifications, noti)
+	mutex.Unlock()
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
+		return
 	}
 
 	for {
@@ -221,24 +235,25 @@ func PostDevice(w http.ResponseWriter, r *http.Request) {
 	mutex.Lock()
 	waitPermission[device.DID] = make(chan bool)
 	discoveredDevices = append(discoveredDevices, device)
-	mutex.Unlock()
+
 	for _, noti := range discoveredNotifications {
 		noti <- device.DID
 	}
-
-	timer := time.NewTimer(3 * time.Second)
+	mutex.Unlock()
+	timer := time.NewTimer(20 * time.Second)
 	select {
 	case <-timer.C:
 		mutex.Lock()
 		delete(waitPermission, device.DID)
 		removeDevice(device)
-		mutex.Unlock()
+
 		for _, noti := range discoveredNotifications {
 			noti <- device.DID
 		}
-
+		mutex.Unlock()
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("This operation is not permitted"))
+		return
 	case b := <-waitPermission[device.DID]:
 		if b {
 			// 디바이스 등록 절차 수행
@@ -251,19 +266,20 @@ func PostDevice(w http.ResponseWriter, r *http.Request) {
 			mutex.Lock()
 			delete(waitPermission, device.DID)
 			removeDevice(device)
-			mutex.Unlock()
+
 			for _, noti := range discoveredNotifications {
 				noti <- device.DID
 			}
+			mutex.Unlock()
 		} else {
 			mutex.Lock()
 			delete(waitPermission, device.DID)
 			removeDevice(device)
-			mutex.Unlock()
+
 			for _, noti := range discoveredNotifications {
 				noti <- device.DID
 			}
-
+			mutex.Unlock()
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("This operation is not permitted"))
 		}
@@ -278,7 +294,6 @@ func PutDevice(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&msg)
 
 	fmt.Println("msg[did]: ", msg["did"])
-
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
@@ -290,7 +305,6 @@ func PutDevice(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Wrong Device ID is Sended"))
 		return
 	}
-
 	ch <- true
 	w.WriteHeader(http.StatusOK)
 }

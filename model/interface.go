@@ -26,6 +26,6 @@ type DBHandler interface {
 }
 
 func NewDBHandler(dbtype, path string) (DBHandler, error) {
-	// return newSqliteHandler(path)
-	return newPostgresqlHandler(path)
+	return newSqliteHandler(path)
+	// return newPostgresqlHandler(path)
 }

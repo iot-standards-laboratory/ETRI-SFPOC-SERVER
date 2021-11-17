@@ -1,0 +1,235 @@
+{
+	"info": {
+		"_postman_id": "6f0d9b87-1c8c-475e-9498-0786a8a423b4",
+		"name": "ETRI-SMARTFARM-POC",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. (post) controller-A",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"cname\": \"controller-A\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://{{server}}/controllers",
+					"protocol": "http",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"controllers"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "2. (post) controller-B",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"cname\": \"controller-B\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://{{server}}/controllers",
+					"protocol": "http",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"controllers"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "3. (post) device-A",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"dname\": \"device-A\",\n    \"type\": \"sensor\",\n    \"cid\": \"{{cid-A}}\",\n    \"sname\": \"devicemanagera\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://{{server}}/devices",
+					"protocol": "http",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"devices"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "4. (post) device-B",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"dname\": \"device-A\",\n    \"type\": \"sensor\",\n    \"cid\": \"{{cid-A}}\",\n    \"sname\": \"devicemanagera\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://{{server}}/devices",
+					"protocol": "http",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"devices"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "5. (post) device-C",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"dname\": \"device-A\",\n    \"type\": \"sensor\",\n    \"cid\": \"{{cid-A}}\",\n    \"sname\": \"devicemanagera\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://{{server}}/devices",
+					"protocol": "http",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"devices"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "6. (post) device-D",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"dname\": \"device-A\",\n    \"type\": \"sensor\",\n    \"cid\": \"{{cid-A}}\",\n    \"sname\": \"devicemanagerb\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://{{server}}/devices",
+					"protocol": "http",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"devices"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "7. (post) device-E",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"dname\": \"device-A\",\n    \"type\": \"sensor\",\n    \"cid\": \"{{cid-A}}\",\n    \"sname\": \"devicemanagerb\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://{{server}}/devices",
+					"protocol": "http",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"devices"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "8. (get) Request-to-ServiceA",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://{{server}}/services/{{sid-A}}",
+					"protocol": "http",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"services",
+						"{{sid-A}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "9. (get) Request-to-ServiceB",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://{{server}}/{{sid-A}}",
+					"protocol": "http",
+					"host": [
+						"{{server}}"
+					],
+					"path": [
+						"{{sid-A}}"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
