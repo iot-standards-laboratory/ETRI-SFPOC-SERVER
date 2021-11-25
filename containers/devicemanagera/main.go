@@ -20,6 +20,7 @@ func getIP() string {
 
 	return addrs[0].String()
 }
+
 func registerToServer() {
 	var exist bool
 	server_addr, exist = os.LookupEnv("SERVER_ADDR")
@@ -45,7 +46,6 @@ func registerToServer() {
 	if err != nil {
 		panic(err)
 	}
-
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		panic(err)

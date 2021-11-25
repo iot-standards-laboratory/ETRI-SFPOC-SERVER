@@ -1,0 +1,1 @@
+rm -r dump.db eth.pcap lo.pcap

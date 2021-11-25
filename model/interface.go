@@ -23,6 +23,8 @@ type DBHandler interface {
 	AddService(name string) error
 	UpdateService(name, addr string) (*Service, error)
 	GetAddr(sid string) (string, error)
+	GetSID(name string) (string, error)
+	IsExistService(name string) bool
 }
 
 func NewDBHandler(dbtype, path string) (DBHandler, error) {

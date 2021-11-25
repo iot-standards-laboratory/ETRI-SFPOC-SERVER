@@ -100,7 +100,7 @@ func PostController(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-
+	w.WriteHeader(http.StatusCreated)
 	encoder := json.NewEncoder(w)
 	err = encoder.Encode(controller)
 
@@ -166,26 +166,40 @@ func GetNotification(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetDiscoveredDevices(w http.ResponseWriter, r *http.Request) {
-	noti := make(chan string, 1)
-	mutex.Lock()
-	discoveredNotifications = append(discoveredNotifications, noti)
-	mutex.Unlock()
-	conn, err := upgrader.Upgrade(w, r, nil)
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+	devices, _, err := db.GetDevices()
+
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
 		return
 	}
 
-	for {
-		<-noti
-		// fmt.Println("Write!!", discoveredDevices)
-		if conn.WriteJSON(discoveredDevices) != nil {
-			log.Println(err)
-			return
-		}
-	}
+	encoder := json.NewEncoder(w)
+	encoder.Encode(devices)
 }
+
+// func GetDiscoveredDevices(w http.ResponseWriter, r *http.Request) {
+// 	noti := make(chan string, 1)
+// 	mutex.Lock()
+// 	discoveredNotifications = append(discoveredNotifications, noti)
+// 	mutex.Unlock()
+// 	conn, err := upgrader.Upgrade(w, r, nil)
+// 	if err != nil {
+// 		w.WriteHeader(http.StatusBadRequest)
+// 		w.Write([]byte(err.Error()))
+// 		return
+// 	}
+
+// 	for {
+// 		<-noti
+// 		// fmt.Println("Write!!", discoveredDevices)
+// 		if conn.WriteJSON(discoveredDevices) != nil {
+// 			log.Println(err)
+// 			return
+// 		}
+// 	}
+// }
 
 var waitPermission = map[string]chan bool{}
 var mutex sync.Mutex
@@ -225,32 +239,49 @@ func PostDevice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// 등록된 제어기로 부터 전송된 요청 메시지임을 확인
 	if !db.IsExistController(device.CID) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("Wrong Controller ID"))
 		return
 	}
 
+	// 장치 ID 생성 및 탐색된 장치 추가
 	device.DID = uuid.NewString()
 	mutex.Lock()
 	waitPermission[device.DID] = make(chan bool)
 	discoveredDevices = append(discoveredDevices, device)
 
+	// 관리자에게 탐색을 알림
 	for _, noti := range discoveredNotifications {
 		noti <- device.DID
 	}
 	mutex.Unlock()
+
 	timer := time.NewTimer(20 * time.Second)
 	select {
-	case <-timer.C:
+	case <-r.Context().Done():
+		fmt.Println("Done!!")
 		mutex.Lock()
+		defer mutex.Unlock()
 		delete(waitPermission, device.DID)
 		removeDevice(device)
 
 		for _, noti := range discoveredNotifications {
 			noti <- device.DID
 		}
-		mutex.Unlock()
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("This operation is not permitted"))
+		return
+	case <-timer.C:
+		mutex.Lock()
+		defer mutex.Unlock()
+		delete(waitPermission, device.DID)
+		removeDevice(device)
+
+		for _, noti := range discoveredNotifications {
+			noti <- device.DID
+		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("This operation is not permitted"))
 		return
@@ -262,24 +293,25 @@ func PostDevice(w http.ResponseWriter, r *http.Request) {
 
 			// 디바이스 등록 알림
 			w.WriteHeader(http.StatusCreated)
+			json.NewEncoder(w).Encode(device)
 			sendNotification(&Notification{Msg: "Added Device"})
 			mutex.Lock()
+			defer mutex.Unlock()
 			delete(waitPermission, device.DID)
 			removeDevice(device)
 
 			for _, noti := range discoveredNotifications {
 				noti <- device.DID
 			}
-			mutex.Unlock()
 		} else {
 			mutex.Lock()
+			defer mutex.Unlock()
 			delete(waitPermission, device.DID)
 			removeDevice(device)
 
 			for _, noti := range discoveredNotifications {
 				noti <- device.DID
 			}
-			mutex.Unlock()
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("This operation is not permitted"))
 		}
@@ -312,6 +344,24 @@ func PutDevice(w http.ResponseWriter, r *http.Request) {
 func GetServices(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+
+	if r.ContentLength != 0 {
+		obj := map[string]string{}
+		err := json.NewDecoder(r.Body).Decode(&obj)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		sid, err := db.GetSID(obj["sname"])
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		w.Write([]byte(sid))
+		return
+	}
+
 	l, err := db.GetServices()
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -362,6 +412,7 @@ func PostService(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&obj)
 
+	db.IsExistService(obj["name"])
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
@@ -376,9 +427,6 @@ func PostService(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-
-	// result := containermgmt.CreateContainer(context.Background(), cont)
-	// b := result.Value(containermgmt.ReturnKey).([]byte)
 }
 
 func RouteRequestToService(w http.ResponseWriter, r *http.Request) {

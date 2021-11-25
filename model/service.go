@@ -52,6 +52,13 @@ func (s *dbHandler) AddService(name string) error {
 	return nil
 }
 
+func (s *dbHandler) IsExistService(name string) bool {
+	var service Service
+	tx := s.db.Select("sid").First(&service, "sname=?", name)
+
+	return tx.Error == nil
+}
+
 func (s *dbHandler) UpdateService(name, addr string) (*Service, error) {
 	tx := s.db.Model(&Service{}).Where("sname = ?", name).Updates(Service{SName: name, SID: uuid.NewString(), Addr: addr})
 	if tx.Error != nil {
@@ -61,6 +68,16 @@ func (s *dbHandler) UpdateService(name, addr string) (*Service, error) {
 	var service Service
 	tx.First(&service, "sname=?", name)
 	return &service, nil
+}
+
+func (s *dbHandler) GetSID(name string) (string, error) {
+	var service Service
+	tx := s.db.Select("sid").First(&service, "sname=?", name)
+	if tx.Error != nil {
+		return "", tx.Error
+	}
+
+	return service.SID, nil
 }
 
 func (s *dbHandler) GetAddr(sid string) (string, error) {
