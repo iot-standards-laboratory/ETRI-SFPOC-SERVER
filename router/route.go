@@ -165,20 +165,6 @@ func GetNotification(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetDiscoveredDevices(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-	devices, _, err := db.GetDevices()
-
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	encoder := json.NewEncoder(w)
-	encoder.Encode(devices)
-}
-
 // func GetDiscoveredDevices(w http.ResponseWriter, r *http.Request) {
 // 	noti := make(chan string, 1)
 // 	mutex.Lock()
@@ -203,8 +189,15 @@ func GetDiscoveredDevices(w http.ResponseWriter, r *http.Request) {
 
 var waitPermission = map[string]chan bool{}
 var mutex sync.Mutex
-var discoveredDevices []*model.Device
-var discoveredNotifications []chan string
+var discoveredDevices = []*model.Device{}
+
+func GetDiscoveredDevices(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
+
+	encoder := json.NewEncoder(w)
+	encoder.Encode(discoveredDevices)
+}
 
 func removeDevice(device *model.Device) {
 	for i, e := range discoveredDevices {
@@ -253,23 +246,19 @@ func PostDevice(w http.ResponseWriter, r *http.Request) {
 	discoveredDevices = append(discoveredDevices, device)
 
 	// 관리자에게 탐색을 알림
-	for _, noti := range discoveredNotifications {
-		noti <- device.DID
-	}
+	sendNotification(&Notification{Msg: "Add discovered device"})
 	mutex.Unlock()
 
 	timer := time.NewTimer(20 * time.Second)
+
 	select {
 	case <-r.Context().Done():
-		fmt.Println("Done!!")
+		fmt.Println("^^")
 		mutex.Lock()
 		defer mutex.Unlock()
 		delete(waitPermission, device.DID)
 		removeDevice(device)
-
-		for _, noti := range discoveredNotifications {
-			noti <- device.DID
-		}
+		sendNotification(&Notification{Msg: "Remove discovered device"})
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("This operation is not permitted"))
 		return
@@ -278,10 +267,7 @@ func PostDevice(w http.ResponseWriter, r *http.Request) {
 		defer mutex.Unlock()
 		delete(waitPermission, device.DID)
 		removeDevice(device)
-
-		for _, noti := range discoveredNotifications {
-			noti <- device.DID
-		}
+		sendNotification(&Notification{Msg: "Remove discovered device"})
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("This operation is not permitted"))
 		return
@@ -299,19 +285,13 @@ func PostDevice(w http.ResponseWriter, r *http.Request) {
 			defer mutex.Unlock()
 			delete(waitPermission, device.DID)
 			removeDevice(device)
-
-			for _, noti := range discoveredNotifications {
-				noti <- device.DID
-			}
+			sendNotification(&Notification{Msg: "Add device"})
 		} else {
 			mutex.Lock()
 			defer mutex.Unlock()
 			delete(waitPermission, device.DID)
 			removeDevice(device)
-
-			for _, noti := range discoveredNotifications {
-				noti <- device.DID
-			}
+			sendNotification(&Notification{Msg: "Remove discovered device"})
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte("This operation is not permitted"))
 		}
