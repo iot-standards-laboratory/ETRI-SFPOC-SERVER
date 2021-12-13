@@ -1,6 +1,8 @@
 package model
 
 import (
+	"errors"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -77,6 +79,9 @@ func (s *dbHandler) GetSID(name string) (string, error) {
 		return "", tx.Error
 	}
 
+	if len(service.SID) == 0 {
+		return "", errors.New("not installed service")
+	}
 	return service.SID, nil
 }
 

@@ -55,10 +55,5 @@ func (s *dbHandler) IsExistController(cid string) bool {
 
 	result := s.db.First(&controller, "cid=?", cid)
 
-	if result.Error != nil {
-		fmt.Println(result.Error)
-		return false
-	}
-
-	return true
+	return result.Error == nil
 }

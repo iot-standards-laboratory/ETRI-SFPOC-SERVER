@@ -16,6 +16,9 @@ import (
 type DBHandler interface {
 	GetDevices() ([]*Device, int, error)
 	AddDevice(d *Device) error
+	QueryDevice(dname string) (*Device, error)
+	DeleteDevice(device *Device) error
+	IsExistDevice(dname string) bool
 	AddController(r io.Reader) (*Controller, error)
 	GetControllers() ([]*Controller, error)
 	IsExistController(cid string) bool
