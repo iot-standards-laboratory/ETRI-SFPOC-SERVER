@@ -86,7 +86,6 @@ func PostDevice(w http.ResponseWriter, r *http.Request) {
 
 	select {
 	case <-r.Context().Done():
-		fmt.Println("^^")
 		mutex.Lock()
 		defer mutex.Unlock()
 		delete(waitPermission, device.DID)
@@ -104,7 +103,11 @@ func PostDevice(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("This operation is not permitted"))
 		return
-	case b := <-waitPermission[device.DID]:
+	case b, ok := <-waitPermission[device.DID]:
+		if !ok {
+			return
+		}
+
 		if b {
 			// 디바이스 등록 절차 수행
 			db.AddDevice(device)

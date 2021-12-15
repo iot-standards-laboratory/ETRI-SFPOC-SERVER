@@ -33,8 +33,8 @@ func removeNotification(noti chan *Notification) {
 	defer notiMutex.Unlock()
 	for i, e := range notifications {
 		if e == noti {
-			discoveredDevices[i] = discoveredDevices[len(discoveredDevices)-1]
-			discoveredDevices = discoveredDevices[:len(discoveredDevices)-1]
+			notifications[i] = notifications[len(notifications)-1]
+			notifications = notifications[:len(notifications)-1]
 		}
 	}
 }

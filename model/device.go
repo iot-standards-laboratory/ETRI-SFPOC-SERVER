@@ -52,16 +52,15 @@ func (s *dbHandler) QueryDevice(dname string) (*Device, error) {
 
 	return &device, nil
 }
-func (s *dbHandler) DeleteDevice(device *Device) error {
 
+func (s *dbHandler) DeleteDevice(device *Device) error {
 	tx := s.db.Delete(device)
 	if tx.Error != nil {
 		return tx.Error
 	}
 
-	tx.First(device, "did=?", device.DID)
+	// tx.First(device, "did=?", device.DID)
 	return nil
-
 }
 
 func (s *dbHandler) IsExistDevice(dname string) bool {
