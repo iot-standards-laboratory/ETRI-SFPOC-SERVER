@@ -13,7 +13,7 @@ import (
 func registerToServer() {
 
 	var obj map[string]string = make(map[string]string)
-	obj["name"] = "devicemanagerb"
+	obj["name"] = "devicemanagera"
 	obj["addr"] = constants.MyIP + ":3000"
 
 	b, err := json.Marshal(obj)

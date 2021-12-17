@@ -83,15 +83,6 @@ func GetDeviceWatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// payload := map[string]interface{}{}
-	// decoder := json.NewDecoder(r.Body)
-	// err = decoder.Decode(&payload)
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	w.Write([]byte(err.Error()))
-	// 	return
-	// }
-
 	if !checkDid(did) {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("not exist did"))
@@ -99,9 +90,10 @@ func GetDeviceWatch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s := make(chan map[string]interface{})
-	ec := make(chan error)
-
 	defer close(s)
+	ec := make(chan error)
+	defer close(ec)
+
 	watch, ok := watchers[did]
 
 	if !ok {

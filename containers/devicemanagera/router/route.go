@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"devicemanagerb/constants"
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -29,21 +28,16 @@ func NewRouter() http.Handler {
 }
 
 // sensing data per device
-var s_data = map[string]interface{}{}
+var state = map[string]interface{}{}
 
 // status from sensor
 func PutStatusChangedHandle(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	b, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
-		return
-	}
+	_status := map[string]interface{}{}
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&_status)
 
-	status := map[string]interface{}{}
-	err = json.Unmarshal(b, &status)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
@@ -57,21 +51,29 @@ func PutStatusChangedHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s_data[did] = status
-	log.Println(s_data)
+	// state[did] = _status
+	// log.Println(state[did])
 
-	cdata, ok := c_data[did]
+	_, ok = state[did]
 	if !ok {
-		w.Write([]byte("I am devicemanagerB"))
-	} else {
-		encoder := json.NewEncoder(w)
-		err := encoder.Encode(cdata)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			return
-		}
+		state[did] = _status
 	}
+
+	b, err := json.Marshal(state[did])
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	w.Write(b)
+
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 
 	req, err := http.NewRequest("PUT", "http://"+constants.ServerAddr+":3000/device/"+did, bytes.NewReader(b))
 	if err != nil {
@@ -82,10 +84,7 @@ func PutStatusChangedHandle(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		panic(err)
 	}
-
 }
-
-var c_data = map[string]interface{}{}
 
 func GetStatusHandle(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
@@ -95,39 +94,30 @@ func GetStatusHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	status, ok := c_data[did]
+	_status, ok := state[did]
 	if !ok {
-		status = map[string]interface{}{
-			"servo": 0,
-			"fan":   0,
-			"light": 0,
+		_status = map[string]interface{}{
+			"msg": "hello world",
 		}
 	}
 
 	encoder := json.NewEncoder(w)
 
-	err := encoder.Encode(status)
+	err := encoder.Encode(_status)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
 		return
 	}
-
 	w.WriteHeader(http.StatusOK)
 }
 
 func PostStatusChangedHandle(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	b, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
-		return
-	}
-
-	status := map[string]interface{}{}
-	err = json.Unmarshal(b, &status)
+	_status := map[string]interface{}{}
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&_status)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
@@ -141,8 +131,8 @@ func PostStatusChangedHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	c_data[did] = status
-	log.Println(c_data)
+	state[did] = _status
+	log.Println(_status)
 
 	w.WriteHeader(http.StatusOK)
 }
